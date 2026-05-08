@@ -1,0 +1,11 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "env": {
+    "ANTHROPIC_API_KEY": "@anthropic_api_key",
+    "QF_CLIENT_ID": "@qf_client_id",
+    "QF_CLIENT_SECRET": "@qf_client_secret"
+  }
+}
