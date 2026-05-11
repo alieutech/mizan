@@ -260,6 +260,9 @@ function NavBtn({
 export default function Home() {
   const [view, setView] = useState<View>('home')
 
+  // Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
   // Auth
   const [user, setUser] = useState<QFUser | null>(null)
   const [authReady, setAuthReady] = useState<boolean | null>(null) // null = checking
@@ -297,7 +300,12 @@ export default function Home() {
       const saved = localStorage.getItem('mizan_saved')
       if (saved) setSavedVerses(JSON.parse(saved))
     } catch {}
-    textareaRef.current?.focus()
+
+    if (!localStorage.getItem('mizan_welcomed')) {
+      setShowOnboarding(true)
+    } else {
+      textareaRef.current?.focus()
+    }
 
     // Fetch verse of the day
     fetch('/api/verse-of-day')
@@ -413,6 +421,13 @@ export default function Home() {
     localStorage.setItem('mizan_saved', JSON.stringify(updated))
   }
 
+  const dismissOnboarding = (prompt?: string) => {
+    localStorage.setItem('mizan_welcomed', '1')
+    setShowOnboarding(false)
+    if (prompt) setSituation(prompt)
+    setTimeout(() => textareaRef.current?.focus(), 50)
+  }
+
   const resetHome = () => {
     setResult(null); setSituation(''); setError('')
     setTimeout(() => textareaRef.current?.focus(), 50)
@@ -424,6 +439,48 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-parchment font-sans text-ink">
+
+      {/* ── Onboarding ── */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          style={{ animation: 'fadeSlideIn 0.3s ease forwards' }}>
+          <div className="w-full max-w-md bg-parchment-card border border-gold/25 rounded-3xl p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <Image src="/images/mizan-logo.png" alt="Mizan" width={40} height={40} className="rounded-full" unoptimized />
+              <div>
+                <h2 className="font-playfair text-lg text-ink">Welcome to Mizan</h2>
+                <p className="text-xs text-ink-muted">ميزان · The Balance</p>
+              </div>
+            </div>
+            <p className="text-sm text-ink-muted leading-relaxed">
+              Describe what you&apos;re carrying — a struggle, a question, a feeling — and Mizan finds the Quran verse written for your moment.
+            </p>
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-widest text-gold font-semibold">Try one of these</p>
+              {[
+                "I'm feeling overwhelmed and don't know where to turn",
+                "I'm struggling to forgive someone who hurt me",
+                "I'm scared about the future and what lies ahead",
+                "I'm grateful for a blessing and want to reflect",
+              ].map(prompt => (
+                <button
+                  key={prompt}
+                  onClick={() => dismissOnboarding(prompt)}
+                  className="w-full text-left text-sm text-ink-muted bg-parchment/40 hover:bg-gold/10 hover:text-gold border border-gold/10 hover:border-gold/30 rounded-xl px-4 py-2.5 transition-all"
+                >
+                  &ldquo;{prompt}&rdquo;
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => dismissOnboarding()}
+              className="w-full bg-gold text-parchment py-3 rounded-full text-sm font-semibold hover:bg-gold-dark transition-colors"
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Auth Toast ── */}
       {authToast && (
