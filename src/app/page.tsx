@@ -272,8 +272,10 @@ export default function Home() {
 
   // Auth
   const [user, setUser] = useState<QFUser | null>(null)
-  const [authReady, setAuthReady] = useState<boolean | null>(null) // null = checking
+  const [authReady, setAuthReady] = useState<boolean | null>(null)
   const [authToast, setAuthToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+  const [qfBookmarks, setQfBookmarks] = useState<{ verse_key: string }[]>([])
+  const [qfStreak, setQfStreak] = useState<{ count: number; active: boolean } | null>(null)
 
   // Home view
   const [situation, setSituation] = useState('')
@@ -322,10 +324,15 @@ export default function Home() {
       .then(d => { if (d.verse_key) setVotd(d) })
       .catch(() => {})
 
-    // Check auth session
+    // Check auth session, then load user data
     fetch('/api/auth/me')
       .then(r => r.json())
-      .then(d => { if (d.user) setUser(d.user) })
+      .then(d => {
+        if (!d.user) return
+        setUser(d.user)
+        fetch('/api/user/bookmarks').then(r => r.json()).then(b => setQfBookmarks(b.bookmarks ?? [])).catch(() => {})
+        fetch('/api/user/streak').then(r => r.json()).then(s => setQfStreak(s.streak ?? null)).catch(() => {})
+      })
       .catch(() => {})
 
     // Check if OAuth redirect URI is registered with QF
@@ -560,10 +567,60 @@ export default function Home() {
       {/* ── Saved View ── */}
       {view === 'saved' && (
         <main className="max-w-3xl mx-auto px-4 py-10">
-          <div className="flex items-baseline justify-between mb-8">
+          <div className="flex items-baseline justify-between mb-6">
             <h1 className="font-playfair text-2xl">{T.yourCollection}</h1>
             <span className="text-xs text-ink-muted">{savedVerses.length} {T.verses.slice(0,6)}</span>
           </div>
+
+          {/* Quran.com account panel */}
+          {user && (
+            <div className="mb-6 bg-parchment-card border border-gold/20 rounded-2xl p-4 space-y-3"
+              style={{ animation: 'fadeSlideIn 0.4s ease forwards', opacity: 0 }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User size={14} className="text-gold" />
+                  <span className="text-sm font-medium text-gold">{displayName(user)}</span>
+                  <span className="text-xs text-ink-muted">· Quran.com</span>
+                </div>
+                {qfStreak && qfStreak.count > 0 && (
+                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${qfStreak.active ? 'bg-amber-900/40 text-amber-400' : 'bg-parchment/40 text-ink-muted'}`}>
+                    <span>🔥</span>
+                    <span>{qfStreak.count} day streak</span>
+                  </div>
+                )}
+              </div>
+              {qfBookmarks.length > 0 && (
+                <div>
+                  <p className="text-xs text-ink-muted mb-2">{qfBookmarks.length} bookmark{qfBookmarks.length !== 1 ? 's' : ''} from Quran.com</p>
+                  <div className="flex flex-wrap gap-2">
+                    {qfBookmarks.slice(0, 12).map(b => (
+                      <span key={b.verse_key} className="text-xs bg-parchment/40 border border-gold/15 text-gold px-2 py-1 rounded-lg font-mono">
+                        {b.verse_key}
+                      </span>
+                    ))}
+                    {qfBookmarks.length > 12 && (
+                      <span className="text-xs text-ink-muted px-2 py-1">+{qfBookmarks.length - 12} more</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {qfBookmarks.length === 0 && (
+                <p className="text-xs text-ink-muted">No Quran.com bookmarks found — bookmark verses on quran.com to see them here.</p>
+              )}
+            </div>
+          )}
+
+          {!user && (
+            <div className="mb-6 border border-gold/15 border-dashed rounded-2xl p-4 text-center space-y-2">
+              <p className="text-sm text-ink-muted">Sign in with Quran.com to sync your bookmarks and reading streak.</p>
+              {authReady && (
+                <a href="/api/auth/qf" className="inline-flex items-center gap-1.5 text-xs font-medium text-gold hover:underline">
+                  <User size={12} /> Connect Quran.com account →
+                </a>
+              )}
+            </div>
+          )}
+
           {savedVerses.length === 0 ? (
             <div className="text-center py-24 space-y-3">
               <Bookmark size={40} className="mx-auto text-ink-muted opacity-20" />
