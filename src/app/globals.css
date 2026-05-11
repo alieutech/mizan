@@ -17,6 +17,11 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* PWA standalone: push sticky header content below the iOS/Android status bar */
+header {
+  padding-top: env(safe-area-inset-top);
+}
+
 @keyframes fadeSlideIn {
   from {
     opacity: 0;
