@@ -12,11 +12,13 @@ import {
   ChevronLeft,
   Copy,
   Check,
+  LogOut,
   Pause,
   Play,
   Search,
   Sparkles,
   Trash2,
+  User,
   X,
 } from 'lucide-react'
 import {
@@ -31,6 +33,11 @@ import { getVerseAudioUrl } from '@/lib/utils'
 
 const MAX_CHARS = 600
 type View = 'home' | 'chapters' | 'search' | 'saved'
+type QFUser = { sub?: string; name?: string; email?: string; preferred_username?: string; username?: string }
+
+function displayName(user: QFUser) {
+  return user.preferred_username || user.username || user.name || user.email?.split('@')[0] || 'Signed in'
+}
 
 // ── Audio Player ──────────────────────────────────────────────────────────────
 
@@ -253,6 +260,11 @@ function NavBtn({
 export default function Home() {
   const [view, setView] = useState<View>('home')
 
+  // Auth
+  const [user, setUser] = useState<QFUser | null>(null)
+  const [authReady, setAuthReady] = useState<boolean | null>(null) // null = checking
+  const [authToast, setAuthToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+
   // Home view
   const [situation, setSituation] = useState('')
   const [loading, setLoading] = useState(false)
@@ -292,6 +304,30 @@ export default function Home() {
       .then(r => r.json())
       .then(d => { if (d.verse_key) setVotd(d) })
       .catch(() => {})
+
+    // Check auth session
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(d => { if (d.user) setUser(d.user) })
+      .catch(() => {})
+
+    // Check if OAuth redirect URI is registered with QF
+    fetch('/api/auth/status')
+      .then(r => r.json())
+      .then(d => setAuthReady(d.ready ?? false))
+      .catch(() => setAuthReady(false))
+
+    // Handle OAuth redirect params
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('auth') === 'success') {
+      setAuthToast({ type: 'success', msg: 'Signed in with Quran.com' })
+      window.history.replaceState({}, '', '/')
+      setTimeout(() => setAuthToast(null), 4000)
+    } else if (params.get('auth_error')) {
+      setAuthToast({ type: 'error', msg: 'Sign-in failed — please try again.' })
+      window.history.replaceState({}, '', '/')
+      setTimeout(() => setAuthToast(null), 4000)
+    }
   }, [])
 
   // Fetch chapters lazily when view opens
@@ -389,6 +425,21 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-parchment font-sans text-ink">
 
+      {/* ── Auth Toast ── */}
+      {authToast && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium shadow-xl border transition-all ${
+            authToast.type === 'success'
+              ? 'bg-teal-900 border-gold/30 text-gold'
+              : 'bg-red-900/80 border-red-700/30 text-red-200'
+          }`}
+          style={{ animation: 'fadeSlideIn 0.3s ease forwards' }}
+        >
+          {authToast.type === 'success' ? <User size={14} /> : <X size={14} />}
+          {authToast.msg}
+        </div>
+      )}
+
       {/* ── Navigation ── */}
       <header className="sticky top-0 z-10 bg-parchment/95 backdrop-blur-sm border-b border-gold/15">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -401,6 +452,34 @@ export default function Home() {
             <NavBtn active={view === 'chapters'} onClick={() => { setView('chapters'); setSelectedChapter(null) }} icon={BookOpen} label="Surahs" />
             <NavBtn active={view === 'search'} onClick={() => setView('search')} icon={Search} label="Search" />
             <NavBtn active={view === 'saved'} onClick={() => setView('saved')} icon={Bookmark} label="Saved" count={savedVerses.length} />
+            {user ? (
+              <div className="flex items-center gap-1.5 pl-1 border-l border-gold/15">
+                <span className="hidden sm:block text-xs text-gold font-medium max-w-[80px] truncate">{displayName(user)}</span>
+                <a
+                  href="/api/auth/logout"
+                  title="Sign out"
+                  className="p-1.5 rounded-full text-ink-muted hover:text-gold transition-colors"
+                >
+                  <LogOut size={14} />
+                </a>
+              </div>
+            ) : authReady ? (
+              <a
+                href="/api/auth/qf"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border border-gold/30 text-xs font-medium text-gold hover:bg-gold/10 transition-all ml-1"
+              >
+                <User size={13} />
+                <span className="hidden sm:inline">Sign in</span>
+              </a>
+            ) : authReady === false ? (
+              <div
+                title="Quran.com sign-in coming soon"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border border-gold/15 text-xs font-medium text-ink-muted/50 cursor-default ml-1"
+              >
+                <User size={13} />
+                <span className="hidden sm:inline">Sign in</span>
+              </div>
+            ) : null}
           </div>
         </div>
       </header>

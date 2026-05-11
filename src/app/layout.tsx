@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Amiri, Playfair_Display, Inter } from 'next/font/google'
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import './globals.css'
 
 const amiri = Amiri({
@@ -24,7 +25,19 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Mizan • ميزان',
   description: 'Find the Quran verse that speaks to your moment.',
-  icons: { icon: '/images/mizan-logo.png' },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Mizan',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
+  icons: {
+    icon: '/images/mizan-logo.png',
+    apple: '/images/mizan-logo.png',
+  },
 }
 
 export const viewport = {
@@ -37,7 +50,10 @@ export const viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${amiri.variable} ${playfair.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ServiceWorkerRegistration />
+      </body>
     </html>
   )
 }
