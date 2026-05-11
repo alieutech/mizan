@@ -4,10 +4,12 @@
  * Docs: https://api-docs.quran.foundation
  */
 
-const QF_AUTH_URL =
+const QF_AUTH_URL = (
   process.env.QF_AUTH_URL ?? "https://oauth2.quran.foundation/oauth2/token"
-const QF_API_URL =
+).trim()
+const QF_API_URL = (
   process.env.QF_API_URL ?? "https://apis.quran.foundation/content/api/v4"
+).trim()
 
 // Public fallback (no auth needed) - api.quran.com
 const PUBLIC_API_URL = "https://api.quran.com/api/v4"

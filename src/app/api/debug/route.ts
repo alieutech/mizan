@@ -3,8 +3,9 @@ import { NextResponse } from "next/server"
 export async function GET() {
   const clientId = process.env.QF_CLIENT_ID
   const clientSecret = process.env.QF_CLIENT_SECRET
-  const authUrl =
+  const authUrl = (
     process.env.QF_AUTH_URL ?? "https://oauth2.quran.foundation/oauth2/token"
+  ).trim()
 
   const results: Record<string, any> = {}
 
