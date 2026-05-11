@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   Bookmark,
   BookmarkCheck,
@@ -545,6 +546,17 @@ export default function Home() {
           <div className="h-16" />
         </main>
       )}
+
+      {/* Footer */}
+      <footer className="border-t border-gold/10 py-6">
+        <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ink-muted">
+          <span>© 2026 Mizan · Built for the Quran Foundation Hackathon</span>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-gold transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-gold transition-colors">Terms of Service</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
