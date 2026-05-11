@@ -30,6 +30,7 @@ import {
   VotdData,
 } from '@/lib/types'
 import { getVerseAudioUrl } from '@/lib/utils'
+import { type Lang, translations } from '@/lib/i18n'
 
 const MAX_CHARS = 600
 type View = 'home' | 'chapters' | 'search' | 'saved'
@@ -41,10 +42,11 @@ function displayName(user: QFUser) {
 
 // ── Audio Player ──────────────────────────────────────────────────────────────
 
-function AudioPlayer({ verseKey, audioUrl }: { verseKey: string; audioUrl?: string }) {
+function AudioPlayer({ verseKey, audioUrl, lang = 'en' }: { verseKey: string; audioUrl?: string; lang?: Lang }) {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const src = audioUrl || getVerseAudioUrl(verseKey)
+  const T = translations[lang]
 
   const toggle = () => {
     if (!audioRef.current) return
@@ -73,7 +75,7 @@ function AudioPlayer({ verseKey, audioUrl }: { verseKey: string; audioUrl?: stri
         >
           {playing ? <Pause size={9} /> : <Play size={9} className="ml-0.5" />}
         </span>
-        <span className="hidden sm:inline">{playing ? 'Pause' : 'Play'}</span>
+        <span className="hidden sm:inline">{playing ? T.pause : T.play}</span>
       </button>
     </div>
   )
@@ -130,11 +132,12 @@ function SkeletonCard() {
 // ── Verse Card (AI results) ───────────────────────────────────────────────────
 
 function VerseCard({
-  verse, saved, onToggleSave, index,
+  verse, saved, onToggleSave, index, lang = 'en',
 }: {
-  verse: VerseResult; saved: boolean; onToggleSave: () => void; index: number
+  verse: VerseResult; saved: boolean; onToggleSave: () => void; index: number; lang?: Lang
 }) {
   const [tafsirOpen, setTafsirOpen] = useState(false)
+  const T = translations[lang]
   return (
     <div
       className="bg-parchment-card border border-gold/20 rounded-2xl p-4 sm:p-6 space-y-5 hover:border-gold/40 transition-colors"
@@ -166,20 +169,20 @@ function VerseCard({
         dangerouslySetInnerHTML={{ __html: verse.connection }}
       />
       <div className="flex items-center justify-between pt-1 border-t border-gold/10">
-        <AudioPlayer verseKey={verse.verse_key} audioUrl={verse.audio_url} />
+        <AudioPlayer verseKey={verse.verse_key} audioUrl={verse.audio_url} lang={lang} />
         {verse.tafsir && (
           <button
             onClick={() => setTafsirOpen(!tafsirOpen)}
             className="flex items-center gap-1 text-xs text-ink-muted hover:text-gold transition-colors"
           >
             {tafsirOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            Tafsir
+            {T.tafsir}
           </button>
         )}
       </div>
       {verse.tafsir && tafsirOpen && (
         <div className="text-xs text-ink-muted leading-relaxed bg-parchment/40 rounded-xl p-4 border border-gold/10">
-          <p className="text-gold text-xs font-semibold mb-2 uppercase tracking-wider">Ibn Kathir</p>
+          <p className="text-gold text-xs font-semibold mb-2 uppercase tracking-wider">{T.ibnKathir}</p>
           {verse.tafsir}…
         </div>
       )}
@@ -189,15 +192,16 @@ function VerseCard({
 
 // ── Verse of the Day Card ─────────────────────────────────────────────────────
 
-function VotdCard({ votd }: { votd: VotdData }) {
+function VotdCard({ votd, lang = 'en' }: { votd: VotdData; lang?: Lang }) {
   const [tafsirOpen, setTafsirOpen] = useState(false)
+  const T = translations[lang]
   return (
     <div
       className="bg-parchment-card border border-gold/25 rounded-2xl p-4 sm:p-5 space-y-3 mb-8"
       style={{ animation: 'fadeSlideIn 0.5s ease forwards', opacity: 0 }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-widest text-gold font-semibold">Verse of the Day</p>
+        <p className="text-xs uppercase tracking-widest text-gold font-semibold">{T.votd}</p>
         <span className="text-xs text-ink-muted">{votd.verse_key}</span>
       </div>
       <p className="font-amiri text-right text-xl sm:text-2xl leading-loose text-ink" dir="rtl" lang="ar">
@@ -207,20 +211,20 @@ function VotdCard({ votd }: { votd: VotdData }) {
         {votd.translation}
       </p>
       <div className="flex items-center justify-between pt-1 border-t border-gold/10">
-        <AudioPlayer verseKey={votd.verse_key} audioUrl={votd.audio_url} />
+        <AudioPlayer verseKey={votd.verse_key} audioUrl={votd.audio_url} lang={lang} />
         {votd.tafsir && (
           <button
             onClick={() => setTafsirOpen(!tafsirOpen)}
             className="flex items-center gap-1 text-xs text-ink-muted hover:text-gold transition-colors"
           >
             {tafsirOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            Tafsir
+            {T.tafsir}
           </button>
         )}
       </div>
       {votd.tafsir && tafsirOpen && (
         <div className="text-xs text-ink-muted leading-relaxed bg-parchment/40 rounded-xl p-4 border border-gold/10">
-          <p className="text-gold text-xs font-semibold mb-2 uppercase tracking-wider">Ibn Kathir</p>
+          <p className="text-gold text-xs font-semibold mb-2 uppercase tracking-wider">{T.ibnKathir}</p>
           {votd.tafsir}…
         </div>
       )}
@@ -259,6 +263,9 @@ function NavBtn({
 
 export default function Home() {
   const [view, setView] = useState<View>('home')
+
+  // Language
+  const [lang, setLang] = useState<Lang>('en')
 
   // Onboarding
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -300,6 +307,8 @@ export default function Home() {
       const saved = localStorage.getItem('mizan_saved')
       if (saved) setSavedVerses(JSON.parse(saved))
     } catch {}
+
+    if (localStorage.getItem('mizan_lang') === 'ar') setLang('ar')
 
     if (!localStorage.getItem('mizan_welcomed')) {
       setShowOnboarding(true)
@@ -421,6 +430,12 @@ export default function Home() {
     localStorage.setItem('mizan_saved', JSON.stringify(updated))
   }
 
+  const toggleLang = () => {
+    const next: Lang = lang === 'en' ? 'ar' : 'en'
+    setLang(next)
+    localStorage.setItem('mizan_lang', next)
+  }
+
   const dismissOnboarding = (prompt?: string) => {
     localStorage.setItem('mizan_welcomed', '1')
     setShowOnboarding(false)
@@ -436,9 +451,10 @@ export default function Home() {
   const goHome = () => { setView('home'); resetHome() }
 
   // ── Render ────────────────────────────────────────────────────────────────
+  const T = translations[lang]
 
   return (
-    <div className="min-h-screen bg-parchment font-sans text-ink">
+    <div className="min-h-screen bg-parchment font-sans text-ink" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ── Onboarding ── */}
       {showOnboarding && (
@@ -448,21 +464,14 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <Image src="/images/mizan-logo.png" alt="Mizan" width={40} height={40} className="rounded-full" unoptimized />
               <div>
-                <h2 className="font-playfair text-lg text-ink">Welcome to Mizan</h2>
+                <h2 className="font-playfair text-lg text-ink">{T.onboardingTitle}</h2>
                 <p className="text-xs text-ink-muted">ميزان · The Balance</p>
               </div>
             </div>
-            <p className="text-sm text-ink-muted leading-relaxed">
-              Describe what you&apos;re carrying — a struggle, a question, a feeling — and Mizan finds the Quran verse written for your moment.
-            </p>
+            <p className="text-sm text-ink-muted leading-relaxed">{T.onboardingSub}</p>
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-widest text-gold font-semibold">Try one of these</p>
-              {[
-                "I'm feeling overwhelmed and don't know where to turn",
-                "I'm struggling to forgive someone who hurt me",
-                "I'm scared about the future and what lies ahead",
-                "I'm grateful for a blessing and want to reflect",
-              ].map(prompt => (
+              <p className="text-xs uppercase tracking-widest text-gold font-semibold">{T.tryOne}</p>
+              {T.onboardingPrompts.map((prompt: string) => (
                 <button
                   key={prompt}
                   onClick={() => dismissOnboarding(prompt)}
@@ -476,7 +485,7 @@ export default function Home() {
               onClick={() => dismissOnboarding()}
               className="w-full bg-gold text-parchment py-3 rounded-full text-sm font-semibold hover:bg-gold-dark transition-colors"
             >
-              Get Started
+              {T.getStarted}
             </button>
           </div>
         </div>
@@ -506,9 +515,16 @@ export default function Home() {
           </button>
 
           <div className="flex items-center gap-1 sm:gap-2">
-            <NavBtn active={view === 'chapters'} onClick={() => { setView('chapters'); setSelectedChapter(null) }} icon={BookOpen} label="Surahs" />
-            <NavBtn active={view === 'search'} onClick={() => setView('search')} icon={Search} label="Search" />
-            <NavBtn active={view === 'saved'} onClick={() => setView('saved')} icon={Bookmark} label="Saved" count={savedVerses.length} />
+            <NavBtn active={view === 'chapters'} onClick={() => { setView('chapters'); setSelectedChapter(null) }} icon={BookOpen} label={T.surahs} />
+            <NavBtn active={view === 'search'} onClick={() => setView('search')} icon={Search} label={T.search} />
+            <NavBtn active={view === 'saved'} onClick={() => setView('saved')} icon={Bookmark} label={T.saved} count={savedVerses.length} />
+            <button
+              onClick={toggleLang}
+              title={lang === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+              className="px-2 py-1.5 rounded-full border border-gold/20 text-xs font-semibold text-gold hover:bg-gold/10 transition-all font-sans tracking-wide"
+            >
+              {lang === 'en' ? 'عر' : 'En'}
+            </button>
             {user ? (
               <div className="flex items-center gap-1.5 pl-1 border-l border-gold/15">
                 <span className="hidden sm:block text-xs text-gold font-medium max-w-[80px] truncate">{displayName(user)}</span>
@@ -545,14 +561,14 @@ export default function Home() {
       {view === 'saved' && (
         <main className="max-w-3xl mx-auto px-4 py-10">
           <div className="flex items-baseline justify-between mb-8">
-            <h1 className="font-playfair text-2xl">Your Collection</h1>
-            <span className="text-xs text-ink-muted">{savedVerses.length} verse{savedVerses.length !== 1 ? 's' : ''}</span>
+            <h1 className="font-playfair text-2xl">{T.yourCollection}</h1>
+            <span className="text-xs text-ink-muted">{savedVerses.length} {T.verses.slice(0,6)}</span>
           </div>
           {savedVerses.length === 0 ? (
             <div className="text-center py-24 space-y-3">
               <Bookmark size={40} className="mx-auto text-ink-muted opacity-20" />
-              <p className="font-medium">Your collection is empty.</p>
-              <p className="text-sm text-ink-muted">Save verses that speak to you — they'll live here.</p>
+              <p className="font-medium">{T.emptyTitle}</p>
+              <p className="text-sm text-ink-muted">{T.emptySub}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -590,10 +606,10 @@ export default function Home() {
             // Chapter detail — verses
             <div>
               <button onClick={() => setSelectedChapter(null)} className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-gold transition-colors mb-6">
-                <ChevronLeft size={16} /> All Surahs
+                <ChevronLeft size={16} /> {T.allSurahs}
               </button>
               <div className="mb-6">
-                <p className="text-xs uppercase tracking-widest text-gold font-semibold mb-1">Surah {selectedChapter.id}</p>
+                <p className="text-xs uppercase tracking-widest text-gold font-semibold mb-1">{T.surah} {selectedChapter.id}</p>
                 <h1 className="font-playfair text-2xl">{selectedChapter.name_simple}</h1>
                 <p className="font-amiri text-2xl text-ink-muted mt-0.5" dir="rtl" lang="ar">{selectedChapter.name_arabic}</p>
                 <p className="text-xs text-ink-muted mt-1">{selectedChapter.verses_count} verses · {selectedChapter.revelation_place}</p>
@@ -623,8 +639,8 @@ export default function Home() {
             // Chapter grid
             <div>
               <div className="mb-6">
-                <h1 className="font-playfair text-2xl mb-1">Browse the Quran</h1>
-                <p className="text-sm text-ink-muted">All 114 Surahs — tap to read</p>
+                <h1 className="font-playfair text-2xl mb-1">{T.browseQuran}</h1>
+                <p className="text-sm text-ink-muted">{T.allSurahsSub}</p>
               </div>
               {chaptersLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -664,8 +680,8 @@ export default function Home() {
       {view === 'search' && (
         <main className="max-w-3xl mx-auto px-4 py-10">
           <div className="mb-6">
-            <h1 className="font-playfair text-2xl mb-1">Search the Quran</h1>
-            <p className="text-sm text-ink-muted">Search by keyword across all verses</p>
+            <h1 className="font-playfair text-2xl mb-1">{T.searchQuran}</h1>
+            <p className="text-sm text-ink-muted">{T.searchSub}</p>
           </div>
 
           <form onSubmit={handleSearch} className="flex gap-2 mb-8">
@@ -673,7 +689,7 @@ export default function Home() {
               autoFocus
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="e.g. patience, mercy, light…"
+              placeholder={T.searchPlaceholder}
               className="flex-1 bg-parchment-card border border-gold/25 rounded-xl px-4 py-3 text-base sm:text-sm text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-2 focus:ring-gold/25 focus:border-gold/50 transition-all"
             />
             <button type="submit" disabled={!searchQuery.trim() || searchLoading}
@@ -692,13 +708,13 @@ export default function Home() {
           {!searchLoading && hasSearched && searchResults.length === 0 && (
             <div className="text-center py-16 text-ink-muted">
               <Search size={36} className="mx-auto mb-3 opacity-20" />
-              <p>No results found for &ldquo;{searchQuery}&rdquo;</p>
+              <p>{T.noResults} &ldquo;{searchQuery}&rdquo;</p>
             </div>
           )}
 
           {!searchLoading && searchResults.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs text-ink-muted mb-4">{searchResults.length} results</p>
+              <p className="text-xs text-ink-muted mb-4">{searchResults.length} {T.results}</p>
               {searchResults.map((r: any, i) => (
                 <div key={r.verse_key || i} className="bg-parchment-card border border-gold/15 rounded-xl p-4 space-y-2"
                   style={{ animation: 'fadeSlideIn 0.3s ease forwards', animationDelay: `${i * 60}ms`, opacity: 0 }}>
@@ -731,15 +747,15 @@ export default function Home() {
               <Image src="/images/mizan-logo.png" alt="Mizan" width={110} height={110} className="relative z-10 rounded-full shadow-xl" priority unoptimized />
             </div>
             <h1 className="font-playfair text-2xl sm:text-3xl md:text-4xl mb-3 leading-snug">
-              The Quran has a verse<br className="hidden sm:block" /> for what you&apos;re carrying.
+              {T.heroTitle.split('\n').map((line, i) => (
+                <span key={i}>{line}{i === 0 && <br className="hidden sm:block" />}</span>
+              ))}
             </h1>
-            <p className="text-ink-muted text-sm max-w-xs mx-auto leading-relaxed">
-              Describe your moment — Mizan finds the words written for you.
-            </p>
+            <p className="text-ink-muted text-sm max-w-xs mx-auto leading-relaxed">{T.heroSub}</p>
           </section>
 
           {/* Verse of the Day */}
-          {votd && !result && !loading && <VotdCard votd={votd} />}
+          {votd && !result && !loading && <VotdCard votd={votd} lang={lang} />}
 
           {/* Form */}
           <form onSubmit={handleMatch} className="space-y-4">
@@ -748,7 +764,7 @@ export default function Home() {
                 ref={textareaRef}
                 value={situation}
                 onChange={e => setSituation(e.target.value.slice(0, MAX_CHARS))}
-                placeholder="Share what you're carrying — a struggle, a question, a feeling, a moment of gratitude…"
+                placeholder={T.placeholder}
                 rows={5}
                 className="w-full bg-parchment-card border border-gold/25 rounded-2xl p-4 sm:p-5 pr-16 text-ink placeholder:text-ink-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-gold/25 focus:border-gold/50 text-base sm:text-sm leading-relaxed transition-all"
               />
@@ -767,8 +783,8 @@ export default function Home() {
               <button type="submit" disabled={!situation.trim() || loading}
                 className="flex items-center justify-center gap-2 bg-gold text-parchment w-full sm:w-auto px-8 py-3.5 sm:py-3 rounded-full text-sm font-semibold hover:bg-gold-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-gold/20">
                 {loading
-                  ? <><span className="w-4 h-4 border-2 border-parchment/30 border-t-parchment rounded-full animate-spin" />Finding verses…</>
-                  : <><Sparkles size={15} />Find My Verses</>}
+                  ? <><span className="w-4 h-4 border-2 border-parchment/30 border-t-parchment rounded-full animate-spin" />{T.finding}</>
+                  : <><Sparkles size={15} />{T.findVerses}</>}
               </button>
             </div>
           </form>
@@ -776,7 +792,7 @@ export default function Home() {
           {/* Skeleton loading */}
           {loading && (
             <div className="py-12 space-y-4">
-              <p className="text-center text-xs text-gold uppercase tracking-widest animate-pulse mb-6">Searching the Quran…</p>
+              <p className="text-center text-xs text-gold uppercase tracking-widest animate-pulse mb-6">{T.searching}</p>
               {[0,1,2,3].map(i => <SkeletonCard key={i} />)}
             </div>
           )}
@@ -785,20 +801,20 @@ export default function Home() {
           {result && !loading && (
             <section ref={resultsRef} className="py-12 space-y-6">
               <div className="text-center space-y-2">
-                <p className="text-xs uppercase tracking-widest text-gold font-semibold">verses for</p>
+                <p className="text-xs uppercase tracking-widest text-gold font-semibold">{T.versesFor}</p>
                 <h2 className="font-playfair text-2xl md:text-3xl">{result.situation_summary}</h2>
                 <p className="text-xs text-ink-muted">
-                  {result.verses.length} verses · tap <Bookmark size={11} className="inline mb-0.5" /> to save · <Play size={11} className="inline mb-0.5" /> to listen
+                  {result.verses.length} {T.verses} · {T.toSave} <Bookmark size={11} className="inline mb-0.5" /> · {T.toListen} <Play size={11} className="inline mb-0.5" />
                 </p>
               </div>
               <div className="space-y-4">
                 {result.verses.map((verse, i) => (
-                  <VerseCard key={verse.verse_key} verse={verse} saved={isSaved(verse.verse_key)} onToggleSave={() => toggleSave(verse)} index={i} />
+                  <VerseCard key={verse.verse_key} verse={verse} saved={isSaved(verse.verse_key)} onToggleSave={() => toggleSave(verse)} index={i} lang={lang} />
                 ))}
               </div>
               <div className="flex justify-center pt-4">
                 <button onClick={resetHome} className="text-sm text-ink-muted hover:text-ink transition-colors underline underline-offset-4 decoration-gold/30">
-                  Search again
+                  {T.searchAgain}
                 </button>
               </div>
             </section>
@@ -811,10 +827,10 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gold/10 py-6">
         <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ink-muted">
-          <span>© 2026 Mizan · Built for the Quran Foundation Hackathon</span>
+          <span>© 2026 Mizan · {T.hackathon}</span>
           <div className="flex items-center gap-4">
-            <Link href="/privacy" className="hover:text-gold transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-gold transition-colors">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-gold transition-colors">{T.privacy}</Link>
+            <Link href="/terms" className="hover:text-gold transition-colors">{T.terms}</Link>
           </div>
         </div>
       </footer>
