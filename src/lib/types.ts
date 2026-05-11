@@ -38,3 +38,17 @@ export interface QuranChapter {
   verses_count: number
   revelation_place: string
 }
+
+export interface QuranVerse {
+  verse_key: string
+  text_uthmani: string
+  translations: Array<{ text: string; resource_name?: string }>
+  audio?: { url: string }
+}
+
+export interface VotdData {
+  verse_key: string
+  arabic: string
+  translation: string
+  tafsir: string | null
+}

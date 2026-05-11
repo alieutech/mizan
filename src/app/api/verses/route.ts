@@ -56,9 +56,16 @@ async function enrichVerse(verse: VerseResult): Promise<VerseResult> {
       getTafsirByVerseKey(verse.verse_key),
     ])
 
+    // Normalise audio URL from QF API response (may be relative or absolute)
+    const rawAudio = liveVerse?.audio?.url
+    const audioUrl = rawAudio
+      ? rawAudio.startsWith("http")
+        ? rawAudio
+        : `https://audio.qurancdn.com/${rawAudio}`
+      : undefined
+
     return {
       ...verse,
-      // Override arabic + translation with verified QF data if available
       arabic: liveVerse?.text_uthmani || verse.arabic,
       translation:
         liveVerse?.translations?.[0]?.text?.replace(/<[^>]*>/g, "") ||
@@ -66,6 +73,7 @@ async function enrichVerse(verse: VerseResult): Promise<VerseResult> {
       tafsir: tafsir?.text
         ? tafsir.text.replace(/<[^>]*>/g, "").slice(0, 400)
         : undefined,
+      audio_url: audioUrl,
     }
   } catch {
     // If enrichment fails, return original AI verse unchanged

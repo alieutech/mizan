@@ -125,8 +125,9 @@ export async function getVerseByKey(
   translationId = 131
 ) {
   try {
+    // audio=7 requests Mishary Alafasy recitation URL from QF API
     const data = await qfFetch(
-      `/verses/by_key/${verseKey}?language=en&words=false&translations=${translationId}&fields=text_uthmani`
+      `/verses/by_key/${verseKey}?language=en&words=false&translations=${translationId}&fields=text_uthmani&audio=7`
     )
     return data.verse || null
   } catch {
