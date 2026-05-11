@@ -393,7 +393,7 @@ export default function Home() {
       <header className="sticky top-0 z-10 bg-parchment/95 backdrop-blur-sm border-b border-gold/15">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <button onClick={goHome} className="flex items-center gap-2.5">
-            <Image src="/images/mizan-logo.png" alt="Mizan" width={30} height={30} className="rounded-full" />
+            <Image src="/images/mizan-logo.png" alt="Mizan" width={30} height={30} className="rounded-full" unoptimized />
             <span className="hidden sm:block font-semibold text-sm tracking-wide">Mizan</span>
           </button>
 
@@ -592,7 +592,7 @@ export default function Home() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-40 h-40 rounded-full bg-gold/10 blur-2xl" />
               </div>
-              <Image src="/images/mizan-logo.png" alt="Mizan" width={110} height={110} className="relative rounded-full shadow-xl" priority />
+              <Image src="/images/mizan-logo.png" alt="Mizan" width={110} height={110} className="relative z-10 rounded-full shadow-xl" priority unoptimized />
             </div>
             <h1 className="font-playfair text-2xl sm:text-3xl md:text-4xl mb-3 leading-snug">
               The Quran has a verse<br className="hidden sm:block" /> for what you&apos;re carrying.

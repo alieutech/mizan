@@ -18,6 +18,7 @@ export default function TermsOfService() {
               width={30}
               height={30}
               className="rounded-full"
+              unoptimized
             />
             <span className="font-semibold text-sm tracking-wide text-ink">Mizan</span>
           </Link>
