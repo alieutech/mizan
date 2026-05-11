@@ -6,7 +6,8 @@
 
 const QF_AUTH_URL =
   process.env.QF_AUTH_URL ?? "https://oauth2.quran.foundation/oauth2/token"
-const QF_API_URL = "https://apis.quran.foundation/content/api/v4"
+const QF_API_URL =
+  process.env.QF_API_URL ?? "https://apis.quran.foundation/content/api/v4"
 
 // Public fallback (no auth needed) - api.quran.com
 const PUBLIC_API_URL = "https://api.quran.com/api/v4"
@@ -67,10 +68,16 @@ async function qfFetch(path: string) {
     next: { revalidate: 3600 }, // Cache for 1 hour
   })
 
-  // On 401, clear token and retry once
+  // 401 — stale token, clear and retry once with a fresh one
   if (res.status === 401) {
     cachedToken = null
     return qfFetch(path)
+  }
+
+  // 403 — token rejected by this API endpoint (e.g. prelive/prod mismatch)
+  // Fall back to public API rather than throwing
+  if (res.status === 403) {
+    return publicApiFetch(path)
   }
 
   if (!res.ok) throw new Error(`QF API error: ${res.status}`)
