@@ -207,7 +207,7 @@ function VotdCard({ votd }: { votd: VotdData }) {
         {votd.translation}
       </p>
       <div className="flex items-center justify-between pt-1 border-t border-gold/10">
-        <AudioPlayer verseKey={votd.verse_key} />
+        <AudioPlayer verseKey={votd.verse_key} audioUrl={votd.audio_url} />
         {votd.tafsir && (
           <button
             onClick={() => setTafsirOpen(!tafsirOpen)}

@@ -53,6 +53,7 @@ export async function GET() {
       tafsir: tafsir?.text
         ? tafsir.text.replace(/<[^>]*>/g, "").slice(0, 300)
         : null,
+      audio_url: verse?.audio?.url || null,
     })
   } catch (error) {
     console.error("Verse of day error:", error)

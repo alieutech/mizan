@@ -51,4 +51,5 @@ export interface VotdData {
   arabic: string
   translation: string
   tafsir: string | null
+  audio_url?: string
 }
