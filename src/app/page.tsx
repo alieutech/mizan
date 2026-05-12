@@ -40,6 +40,63 @@ function displayName(user: QFUser) {
   return user.preferred_username || user.username || user.name || user.email?.split('@')[0] || 'Signed in'
 }
 
+// ── User Menu ─────────────────────────────────────────────────────────────────
+
+function UserAvatar({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
+  const initial = name.trim()[0]?.toUpperCase() ?? '?'
+  const cls = size === 'md'
+    ? 'w-9 h-9 text-sm font-bold'
+    : 'w-7 h-7 text-xs font-semibold'
+  return (
+    <div className={`${cls} rounded-full bg-gold/15 border border-gold/35 flex items-center justify-center text-gold flex-shrink-0`}>
+      {initial}
+    </div>
+  )
+}
+
+function UserMenu({ user }: { user: QFUser }) {
+  const [open, setOpen] = useState(false)
+  const name = displayName(user)
+
+  return (
+    <div className="relative pl-1 border-l border-gold/15">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+        aria-label="Account menu"
+      >
+        <UserAvatar name={name} />
+        <span className="hidden sm:block text-xs text-gold font-medium max-w-[72px] truncate">{name}</span>
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div
+            className="absolute right-0 top-full mt-2 w-56 bg-parchment-card border border-gold/20 rounded-2xl shadow-2xl z-30 overflow-hidden"
+            style={{ animation: 'fadeSlideIn 0.15s ease forwards' }}
+          >
+            <div className="px-4 py-3 border-b border-gold/10 flex items-center gap-3">
+              <UserAvatar name={name} size="md" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink truncate">{name}</p>
+                <p className="text-xs text-ink-muted">Quran.com account</p>
+              </div>
+            </div>
+            <a
+              href="/api/auth/logout"
+              className="flex items-center gap-2.5 px-4 py-3 text-sm text-ink-muted hover:text-gold hover:bg-gold/5 transition-colors"
+            >
+              <LogOut size={14} />
+              Sign out
+            </a>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Audio Player ──────────────────────────────────────────────────────────────
 
 function AudioPlayer({ verseKey, audioUrl, lang = 'en' }: { verseKey: string; audioUrl?: string; lang?: Lang }) {
@@ -535,16 +592,7 @@ export default function Home() {
               {lang === 'en' ? 'عر' : 'En'}
             </button>
             {user ? (
-              <div className="flex items-center gap-1.5 pl-1 border-l border-gold/15">
-                <span className="hidden sm:block text-xs text-gold font-medium max-w-[80px] truncate">{displayName(user)}</span>
-                <a
-                  href="/api/auth/logout"
-                  title="Sign out"
-                  className="p-1.5 rounded-full text-ink-muted hover:text-gold transition-colors"
-                >
-                  <LogOut size={14} />
-                </a>
-              </div>
+              <UserMenu user={user} />
             ) : authReady ? (
               <a
                 href="/api/auth/qf"
@@ -579,10 +627,12 @@ export default function Home() {
             <div className="mb-6 bg-parchment-card border border-gold/20 rounded-2xl p-4 space-y-3"
               style={{ animation: 'fadeSlideIn 0.4s ease forwards', opacity: 0 }}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <User size={14} className="text-gold" />
-                  <span className="text-sm font-medium text-gold">{displayName(user)}</span>
-                  <span className="text-xs text-ink-muted">· Quran.com</span>
+                <div className="flex items-center gap-3">
+                  <UserAvatar name={displayName(user)} size="md" />
+                  <div>
+                    <p className="text-sm font-medium text-ink">{displayName(user)}</p>
+                    <p className="text-xs text-ink-muted">Quran.com account</p>
+                  </div>
                 </div>
                 {qfStreak && qfStreak.count > 0 && (
                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${qfStreak.active ? 'bg-amber-900/40 text-amber-400' : 'bg-parchment/40 text-ink-muted'}`}>
