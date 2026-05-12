@@ -4,19 +4,23 @@
 
 Mizan is an AI-powered Quran companion that takes a situation, feeling, or question in plain language and surfaces the most semantically relevant verses — complete with Arabic text, translation, a personal connection explanation, Ibn Kathir tafsir, and audio recitation.
 
-Built for the **Quran Foundation Hackathon 2026**.
+Built for the **Quran Foundation Hackathon 2026** · [Live demo](https://mizan-psi.vercel.app)
 
 ---
 
 ## Features
 
 - **AI Verse Matching** — Describe what you're going through; Claude finds 4–5 verses that speak directly to your situation
-- **Verified Quran Data** — Arabic (Uthmani script), Sahih International translation, and tafsir sourced from the Quran Foundation API
-- **Audio Recitation** — Listen to each verse recited by Mishary Rashid Alafasy
-- **Copy Verse** — One tap copies Arabic + translation + reference to clipboard
+- **Sign in with Quran.com** — OAuth 2.0 + PKCE integration to sync bookmarks and reading streak from your Quran.com account
+- **Verse of the Day** — Daily verse enriched with QF API data, tafsir, and audio
+- **Browse 114 Surahs** — Full chapter grid with verse-by-verse reading and audio
+- **Quran Search** — Keyword search across all verses via the QF Search API
 - **Save Collection** — Bookmark verses to a personal collection stored in localStorage
-- **Graceful Fallbacks** — Works without API keys for testing; falls back to public Quran.com API and hardcoded verses
-- **Mobile-First** — Responsive layout with safe-area support, iOS zoom prevention, and 44px touch targets
+- **Audio Recitation** — Per-verse Alafasy playback via QF API
+- **Tafsir** — Collapsible Ibn Kathir commentary on every verse
+- **Arabic UI** — Full RTL layout with Arabic labels, one tap to switch
+- **PWA** — Installable on iPhone and Android with offline support
+- **Mobile-First** — Responsive layout with safe-area support and iOS zoom prevention
 
 ---
 
@@ -28,7 +32,8 @@ Built for the **Quran Foundation Hackathon 2026**.
 | Language | TypeScript |
 | AI | Anthropic Claude (`claude-sonnet-4-20250514`) |
 | Quran Data | Quran Foundation API v4 + api.quran.com fallback |
-| Styling | Tailwind CSS + Radix UI |
+| Auth | QF OAuth 2.0 + PKCE (Authorization Code flow) |
+| Styling | Tailwind CSS |
 | Fonts | Amiri (Arabic), Playfair Display, Inter |
 | Deployment | Vercel |
 
@@ -54,15 +59,22 @@ Then fill in `.env.local`:
 # Required for AI verse matching
 ANTHROPIC_API_KEY=your_anthropic_api_key
 
-# Optional — falls back to public api.quran.com without these
-QF_CLIENT_ID=your_quran_foundation_client_id
-QF_CLIENT_SECRET=your_quran_foundation_client_secret
+# Quran Foundation — content API
+QF_CLIENT_ID=your_qf_client_id
+QF_CLIENT_SECRET=your_qf_client_secret
+QF_AUTH_URL=https://oauth2.quran.foundation/oauth2/token
+
+# Quran Foundation — OAuth user login
+QF_OAUTH_CLIENT_ID=your_qf_oauth_client_id
+QF_OAUTH_CLIENT_SECRET=your_qf_oauth_client_secret
+QF_OAUTH_AUTH_URL=https://prelive-oauth2.quran.foundation/oauth2/auth
+QF_OAUTH_TOKEN_URL=https://prelive-oauth2.quran.foundation/oauth2/token
 
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 - **Anthropic API key** — [console.anthropic.com](https://console.anthropic.com)
-- **Quran Foundation credentials** — request access at quran.foundation/developers
+- **Quran Foundation credentials** — [quran.foundation/developers](https://quran.foundation/developers)
 
 ### 3. Run the dev server
 
@@ -109,34 +121,29 @@ Match Quran verses to a situation using Claude AI.
 | Tafsir source | Ibn Kathir (ID 169) |
 | Translation | Sahih International (ID 131) |
 
-### `GET /api/verse?key=2:286&tafsir=true`
-Fetch a single verse with optional tafsir.
+### `GET /api/verse-of-day`
+Returns the daily verse with Arabic text, translation, tafsir, and audio URL.
 
 ### `GET /api/chapters`
 List all 114 Quran chapters.
 
+### `GET /api/chapters/[id]`
+Fetch all verses for a chapter with audio map.
+
 ### `GET /api/search?q=query`
 Keyword search across verses.
 
----
+### `GET /api/auth/qf`
+Initiates QF OAuth flow (returns redirect URL + sets PKCE state).
 
-## Deployment
+### `GET /api/auth/qf/callback`
+Handles OAuth callback, exchanges code for tokens, sets session cookie.
 
-### Deploy to Vercel
+### `GET /api/auth/me`
+Returns the signed-in user from session cookie.
 
-```bash
-npm run build   # verify build passes locally first
-```
-
-Then push to GitHub and import the repo in Vercel. Add environment variables under **Settings → Environment Variables**:
-
-| Variable | Required |
-|---|---|
-| `ANTHROPIC_API_KEY` | Yes (for AI matching) |
-| `QF_CLIENT_ID` | No (uses public API fallback) |
-| `QF_CLIENT_SECRET` | No (uses public API fallback) |
-
-The app is fully functional without any keys — the fallback experience uses hardcoded verses enriched with live data from the public Quran.com API.
+### `GET /api/auth/logout`
+Clears session cookie and redirects home.
 
 ---
 
@@ -146,18 +153,38 @@ The app is fully functional without any keys — the fallback experience uses ha
 src/
 ├── app/
 │   ├── api/
-│   │   ├── chapters/route.ts   # List all chapters
-│   │   ├── search/route.ts     # Keyword search
-│   │   ├── verse/route.ts      # Single verse + tafsir
-│   │   └── verses/route.ts     # AI verse matching (core)
+│   │   ├── auth/
+│   │   │   ├── qf/route.ts          # OAuth initiation (PKCE)
+│   │   │   ├── qf/callback/route.ts # Token exchange
+│   │   │   ├── me/route.ts          # Session user
+│   │   │   ├── logout/route.ts      # Sign out
+│   │   │   └── status/route.ts      # OAuth readiness check
+│   │   ├── user/
+│   │   │   ├── bookmarks/route.ts   # QF user bookmarks
+│   │   │   └── streak/route.ts      # QF reading streak
+│   │   ├── chapters/route.ts        # All chapters
+│   │   ├── chapters/[id]/route.ts   # Chapter verses
+│   │   ├── search/route.ts          # Keyword search
+│   │   ├── verse-of-day/route.ts    # Daily verse
+│   │   └── verses/route.ts          # AI verse matching (core)
+│   ├── privacy/page.tsx
+│   ├── terms/page.tsx
 │   ├── globals.css
 │   ├── layout.tsx
-│   └── page.tsx                # Main UI
+│   └── page.tsx                     # Main UI
+├── components/
+│   ├── LangToggle.tsx               # EN/AR toggle
+│   └── ServiceWorkerRegistration.tsx
 └── lib/
-    ├── prompts.ts              # Claude system prompt
-    ├── quranApi.ts             # Quran Foundation API client
-    ├── types.ts                # TypeScript interfaces
-    └── utils.ts                # cn(), getVerseAudioUrl()
+    ├── i18n.ts                      # EN + AR translations
+    ├── prompts.ts                   # Claude system prompt
+    ├── quranApi.ts                  # QF API client
+    ├── types.ts                     # TypeScript interfaces
+    └── utils.ts                     # Helpers
+public/
+├── manifest.json                    # PWA manifest
+├── sw.js                            # Service worker
+└── offline.html                     # Offline fallback
 ```
 
 ---
