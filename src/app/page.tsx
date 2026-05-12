@@ -441,6 +441,8 @@ export default function Home() {
     const next: Lang = lang === 'en' ? 'ar' : 'en'
     setLang(next)
     localStorage.setItem('mizan_lang', next)
+    document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr'
+    document.documentElement.lang = next
   }
 
   const dismissOnboarding = (prompt?: string) => {

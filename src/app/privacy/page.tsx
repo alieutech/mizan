@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import LangToggle from '@/components/LangToggle'
 
 export const metadata = {
   title: 'Privacy Policy · Mizan',
@@ -10,7 +11,7 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-parchment font-sans text-ink">
       {/* Nav */}
       <header className="sticky top-0 z-10 bg-parchment/95 backdrop-blur-sm border-b border-gold/15">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <Image
               src="/images/mizan-logo.png"
@@ -22,6 +23,7 @@ export default function PrivacyPolicy() {
             />
             <span className="font-semibold text-sm tracking-wide text-ink">Mizan</span>
           </Link>
+          <LangToggle />
         </div>
       </header>
 
