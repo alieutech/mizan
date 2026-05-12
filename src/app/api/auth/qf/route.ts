@@ -43,7 +43,17 @@ export async function GET() {
     code_challenge_method: 'S256',
   })
 
-  const response = NextResponse.redirect(`${QF_AUTH_ENDPOINT}?${params}`)
+  const authUrl = `${QF_AUTH_ENDPOINT}?${params}`
+
+  // Return an HTML page that sets cookies then navigates via JS.
+  // Cookies on 307 redirect responses are unreliable in some browsers
+  // (Safari ITP, cross-site navigation) — a 200 response guarantees storage.
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><script>window.location.replace(${JSON.stringify(authUrl)})</script></head><body></body></html>`
+
+  const response = new NextResponse(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  })
 
   const cookieOpts = {
     httpOnly: true,
