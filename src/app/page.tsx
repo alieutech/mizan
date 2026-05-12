@@ -405,7 +405,8 @@ export default function Home() {
       window.history.replaceState({}, '', '/')
       setTimeout(() => setAuthToast(null), 4000)
     } else if (params.get('auth_error')) {
-      setAuthToast({ type: 'error', msg: 'Sign-in failed — please try again.' })
+      const errCode = params.get('auth_error')
+      setAuthToast({ type: 'error', msg: `Sign-in failed: ${errCode}` })
       window.history.replaceState({}, '', '/')
       setTimeout(() => setAuthToast(null), 4000)
     }
