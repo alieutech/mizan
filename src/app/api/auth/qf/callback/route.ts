@@ -25,6 +25,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${appUrl}/?auth_error=no_code`)
   }
 
+  const codeVerifier = req.cookies.get('qf_pkce_verifier')?.value
+  if (!codeVerifier) {
+    return NextResponse.redirect(`${appUrl}/?auth_error=missing_verifier`)
+  }
+
   const clientId = process.env.QF_OAUTH_CLIENT_ID!
   const clientSecret = process.env.QF_OAUTH_CLIENT_SECRET!
   const redirectUri = `${appUrl}/api/auth/qf/callback`
@@ -40,10 +45,15 @@ export async function GET(req: NextRequest) {
         grant_type: 'authorization_code',
         code,
         redirect_uri: redirectUri,
+        code_verifier: codeVerifier,
       }).toString(),
     })
 
-    if (!tokenRes.ok) throw new Error(`Token exchange failed: ${tokenRes.status}`)
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text()
+      console.error('Token exchange failed:', tokenRes.status, errText)
+      throw new Error(`Token exchange failed: ${tokenRes.status}`)
+    }
     const tokens = await tokenRes.json()
 
     // Fetch OpenID userinfo
@@ -73,6 +83,7 @@ export async function GET(req: NextRequest) {
       path: '/',
     })
     response.cookies.delete('qf_oauth_state')
+    response.cookies.delete('qf_pkce_verifier')
     return response
   } catch (err) {
     console.error('QF OAuth callback error:', err)
