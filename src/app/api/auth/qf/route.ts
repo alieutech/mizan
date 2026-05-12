@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 
-const QF_AUTH_ENDPOINT = 'https://oauth2.quran.foundation/oauth2/auth'
+const QF_AUTH_ENDPOINT =
+  process.env.QF_OAUTH_AUTH_URL ?? 'https://prelive-oauth2.quran.foundation/oauth2/auth'
 
 export async function GET() {
-  const clientId = process.env.QF_CLIENT_ID
+  const clientId = process.env.QF_OAUTH_CLIENT_ID
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim()
 
   if (!clientId) {

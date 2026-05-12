@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const QF_AUTH_ENDPOINT = 'https://oauth2.quran.foundation/oauth2/auth'
+const QF_AUTH_ENDPOINT =
+  process.env.QF_OAUTH_AUTH_URL ?? 'https://prelive-oauth2.quran.foundation/oauth2/auth'
 
-// Returns whether the QF OAuth redirect URI is registered and the flow can complete.
-// We probe the auth endpoint with our redirect URI — if it redirects to oauth-error
-// the URI isn't registered yet.
-export async function GET(req: NextRequest) {
-  const clientId = process.env.QF_CLIENT_ID
+export async function GET(_req: NextRequest) {
+  const clientId = process.env.QF_OAUTH_CLIENT_ID
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim()
 
   if (!clientId) {
@@ -19,13 +17,11 @@ export async function GET(req: NextRequest) {
     client_id: clientId,
     redirect_uri: redirectUri,
     scope: 'openid',
-    state: 'probe',
+    state: 'statuscheck',
   })
 
   try {
-    const res = await fetch(`${QF_AUTH_ENDPOINT}?${params}`, {
-      redirect: 'manual',
-    })
+    const res = await fetch(`${QF_AUTH_ENDPOINT}?${params}`, { redirect: 'manual' })
     const location = res.headers.get('location') ?? ''
     const ready = !location.includes('oauth-error') && !location.includes('invalid_request')
     return NextResponse.json({ ready, redirect_uri: redirectUri })

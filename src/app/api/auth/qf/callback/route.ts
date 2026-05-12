@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const QF_TOKEN_URL = (
-  process.env.QF_AUTH_URL ?? 'https://oauth2.quran.foundation/oauth2/token'
-).trim()
-const QF_USERINFO_URL = 'https://oauth2.quran.foundation/userinfo'
+const QF_TOKEN_URL =
+  process.env.QF_OAUTH_TOKEN_URL ?? 'https://prelive-oauth2.quran.foundation/oauth2/token'
+const QF_USERINFO_URL = 'https://prelive-oauth2.quran.foundation/userinfo'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
@@ -26,8 +25,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${appUrl}/?auth_error=no_code`)
   }
 
-  const clientId = process.env.QF_CLIENT_ID!
-  const clientSecret = process.env.QF_CLIENT_SECRET!
+  const clientId = process.env.QF_OAUTH_CLIENT_ID!
+  const clientSecret = process.env.QF_OAUTH_CLIENT_SECRET!
   const redirectUri = `${appUrl}/api/auth/qf/callback`
 
   try {
