@@ -406,6 +406,7 @@ export default function Home() {
       setTimeout(() => setAuthToast(null), 4000)
     } else if (params.get('auth_error')) {
       const errCode = params.get('auth_error')
+      console.error('[Mizan] auth_error:', errCode)
       setAuthToast({ type: 'error', msg: `Sign-in failed: ${errCode}` })
       window.history.replaceState({}, '', '/')
       setTimeout(() => setAuthToast(null), 4000)
