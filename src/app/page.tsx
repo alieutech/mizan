@@ -596,13 +596,17 @@ export default function Home() {
             {user ? (
               <UserMenu user={user} />
             ) : authReady ? (
-              <a
-                href="/api/auth/qf"
+              <button
+                onClick={async () => {
+                  const res = await fetch('/api/auth/qf')
+                  const data = await res.json()
+                  if (data.url) window.location.href = data.url
+                }}
                 className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border border-gold/30 text-xs font-medium text-gold hover:bg-gold/10 transition-all ml-1"
               >
                 <User size={13} />
                 <span className="hidden sm:inline">Sign in</span>
-              </a>
+              </button>
             ) : authReady === false ? (
               <div
                 title="Quran.com sign-in coming soon"
@@ -668,9 +672,16 @@ export default function Home() {
             <div className="mb-6 border border-gold/15 border-dashed rounded-2xl p-4 text-center space-y-2">
               <p className="text-sm text-ink-muted">Sign in with Quran.com to sync your bookmarks and reading streak.</p>
               {authReady && (
-                <a href="/api/auth/qf" className="inline-flex items-center gap-1.5 text-xs font-medium text-gold hover:underline">
+                <button
+                  onClick={async () => {
+                    const res = await fetch('/api/auth/qf')
+                    const data = await res.json()
+                    if (data.url) window.location.href = data.url
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gold hover:underline"
+                >
                   <User size={12} /> Connect Quran.com account →
-                </a>
+                </button>
               )}
             </div>
           )}

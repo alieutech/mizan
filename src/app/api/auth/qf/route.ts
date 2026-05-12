@@ -43,17 +43,13 @@ export async function GET() {
     code_challenge_method: 'S256',
   })
 
-  const authUrl = `${QF_AUTH_ENDPOINT}?${params}`
-
-  // Return an HTML page that sets cookies then navigates via JS.
-  // Cookies on 307 redirect responses are unreliable in some browsers
-  // (Safari ITP, cross-site navigation) — a 200 response guarantees storage.
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><script>window.location.replace(${JSON.stringify(authUrl)})</script></head><body></body></html>`
-
-  const response = new NextResponse(html, {
-    status: 200,
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
-  })
+  // Return JSON with the auth URL. The client fetches this endpoint first
+  // (which stores the cookies), then does window.location.href = url.
+  // This is more reliable than setting cookies on a redirect response.
+  const response = NextResponse.json(
+    { url: `${QF_AUTH_ENDPOINT}?${params}` },
+    { headers: { 'Cache-Control': 'no-store' } }
+  )
 
   const cookieOpts = {
     httpOnly: true,
