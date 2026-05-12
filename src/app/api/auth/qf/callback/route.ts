@@ -4,6 +4,33 @@ const QF_TOKEN_URL =
   process.env.QF_OAUTH_TOKEN_URL ?? 'https://prelive-oauth2.quran.foundation/oauth2/token'
 const QF_USERINFO_URL = 'https://prelive-oauth2.quran.foundation/userinfo'
 
+async function hmacSign(data: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data))
+  return Buffer.from(sig).toString('base64url')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+}
+
+async function decodeState(state: string, secret: string): Promise<{ n: string; v: string } | null> {
+  const dot = state.lastIndexOf('.')
+  if (dot === -1) return null
+  const payload = state.slice(0, dot)
+  const sig = state.slice(dot + 1)
+  const expectedSig = await hmacSign(payload, secret)
+  if (sig !== expectedSig) return null
+  try {
+    return JSON.parse(Buffer.from(payload, 'base64url').toString())
+  } catch {
+    return null
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const code = searchParams.get('code')
@@ -11,24 +38,22 @@ export async function GET(req: NextRequest) {
   const error = searchParams.get('error')
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim()
+  const secret = process.env.QF_OAUTH_CLIENT_SECRET ?? 'fallback-secret'
 
   if (error) {
     return NextResponse.redirect(`${appUrl}/?auth_error=${encodeURIComponent(error)}`)
   }
 
-  const storedState = req.cookies.get('qf_oauth_state')?.value
-  if (!state || state !== storedState) {
+  if (!state || !code) {
+    return NextResponse.redirect(`${appUrl}/?auth_error=missing_params`)
+  }
+
+  const stateData = await decodeState(state, secret)
+  if (!stateData) {
     return NextResponse.redirect(`${appUrl}/?auth_error=invalid_state`)
   }
 
-  if (!code) {
-    return NextResponse.redirect(`${appUrl}/?auth_error=no_code`)
-  }
-
-  const codeVerifier = req.cookies.get('qf_pkce_verifier')?.value
-  if (!codeVerifier) {
-    return NextResponse.redirect(`${appUrl}/?auth_error=missing_verifier`)
-  }
+  const codeVerifier = stateData.v
 
   const clientId = process.env.QF_OAUTH_CLIENT_ID!
   const clientSecret = process.env.QF_OAUTH_CLIENT_SECRET!
@@ -56,7 +81,6 @@ export async function GET(req: NextRequest) {
     }
     const tokens = await tokenRes.json()
 
-    // Fetch OpenID userinfo
     let userInfo: Record<string, unknown> = {}
     try {
       const userRes = await fetch(QF_USERINFO_URL, {
@@ -82,8 +106,6 @@ export async function GET(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
     })
-    response.cookies.delete('qf_oauth_state')
-    response.cookies.delete('qf_pkce_verifier')
     return response
   } catch (err) {
     console.error('QF OAuth callback error:', err)
