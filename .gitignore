@@ -16,3 +16,7 @@ Thumbs.db
 
 # misc
 npm-debug.log*
+tsconfig.tsbuildinfo
+
+# internal docs
+SUBMISSION.md
