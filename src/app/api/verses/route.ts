@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     const client = new Anthropic({ apiKey })
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: VERSE_MATCHER_SYSTEM_PROMPT,
       messages: [{ role: "user", content: `My situation: ${situation}` }],
@@ -130,10 +130,13 @@ export async function POST(req: NextRequest) {
 
     if (
       error?.status === 400 ||
+      error?.status === 404 ||
       error?.status === 429 ||
+      error?.status === 401 ||
       error?.message?.includes("quota") ||
       error?.message?.includes("API_KEY_INVALID") ||
-      error?.message?.includes("API key not valid")
+      error?.message?.includes("API key not valid") ||
+      error?.message?.includes("model")
     ) {
       console.warn("API issue — returning fallback verses")
       const enriched = await Promise.all(FALLBACK.verses.map(enrichVerse))
